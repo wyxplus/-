@@ -117,6 +117,76 @@ const char* inet_ntop(int family, const void *addrptr, char *strptr, size_t len)
 
 
 
+## Chapter Three
+
+```c
+#include <netinet/in.h>
+   	struct in_addr {
+    	in_addr_t s_addr; 	// 32-bits IPv4 address
+	}
+	struct sockaddr_in {
+        uint8_t 		sin_len;		// length of structure (16)
+        sa_family_t 	sin_family;		// AF_INEF
+        in_port_t 		sin_port;		// 16-bits TCP or UDP ports
+        struct in_addr 	sin_addr;		// 32-bits IPv4 address
+        char 			sin_zero[8];	// unused
+    }
+
+	
+```
+
+通用套接字地址结构
+
+```c
+#include <sys/socket.h>
+    struct sockaddr {
+        uint8_t 		sa_len;		// length of structure (16)
+        sa_family_t 	sa_family;		// AF_INEF
+        char			sa_data[14];
+    }
+```
+
+
+
+新通用套接字地址结构
+
+```c
+#include <netinet/in.h>
+struct sockaddr_storage {
+    uint8_t 		ss_len;			// length of this struct
+    sa_family_t 	ss_family;		// AF_XXX
+}
+```
+
+如所有套接字函数都是内核的系统调用（System V 中作为库函数）：
+
+从进程到内核传递套接字地址结构的函数：bind、connect、sendto。
+
+从内核到进程传递套接字地址结构的函数：accept、recvfrom、getsockname、getpeername。
+
+传递套接字地址结构的函数：recvmsg、sendmsg。
+
+
+
+字节序转换：
+
+```c
+#include <netinet/in.h>
+uint16_t htons(uint16_t host16bitvalue);
+uint32_t htonl(uint32_t host32bitvalue);	// 返回网络序的值
+
+uint16_t ntohs(uint16_t net16bitvalue);
+uint32_t ntohl(uint32_t net32bitvalue);		// 返回主机序的值
+```
+
+
+
+注：在 TCP/IP 发展早期，Byte（8 bits）一般不使用，使用 octet 作为 1 Byte。
+
+
+
+
+
 ## Chapter Four
 
 AF_XXX：表示地址簇
@@ -230,84 +300,58 @@ extern char **environ;
 int execl(const char *path, const char *arg0, ...);
 int execlp(const char *file, const char *arg, ...);
 int execle(const char *path, const char *arg , ..., char * const envp[]);
-int execv(const char *path, char *const argv[]);
+int execv(const char *path, char *const argv[]);	
 int execvp(const char *file, char *const argv[]);
-int execve(const char *path, char *const argv[], char *const envp[]);
+int execve(const char *path, char *const argv[], char *const envp[]);	// // 只有 execve 是内核中的系统调用
 ```
 
 
-
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|    execlp(file, arg, ..., 0)      |                        
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+                          
                        
 
+每个文件或套接字都有一个引用计数，引用计数在文件表项中维护。
+
+fork() 后套接字的引用计数会变成 2。
 
 
-
-
-## Chapter Three
 
 ```c
-#include <netinet/in.h>
-   	struct in_addr {
-    	in_addr_t s_addr; 	// 32-bits IPv4 address
-	}
-	struct sockaddr_in {
-        uint8_t 		sin_len;		// length of structure (16)
-        sa_family_t 	sin_family;		// AF_INEF
-        in_port_t 		sin_port;		// 16-bits TCP or UDP ports
-        struct in_addr 	sin_addr;		// 32-bits IPv4 address
-        char 			sin_zero[8];	// unused
-    }
-
-	
+#include <unistd.h>
+int close(int sockfd);
 ```
 
-通用套接字地址结构
+close() 一个套接字的默认行为是把该套接字标记成已关闭，然后立即返回到调用进程，然后该套接字描述符不能再由调用进程使用。
+
+TCP 尝试把未发送的数据发送完后，再发送正常的终止序列。
+
+SO_LINGER 套接字选项可以改变这种默认行为。
+
+
+
+若父进程对于已连接套接字都不调用 close()，则会导致父进程耗尽可用描述符，并且没有一个客户连接被终止。
+
+
+
+
 
 ```c
 #include <sys/socket.h>
-    struct sockaddr {
-        uint8_t 		sa_len;		// length of structure (16)
-        sa_family_t 	sa_family;		// AF_INEF
-        char			sa_data[14];
-    }
+
+int getsockname(int sockfd, struct sockaddr *localaddr, socket_len *addrlen);	// 返回某个套接字关联的本地协议地址
+int getpeername(int sockfd, struct sockaddr *peeraddr, socket_len *addrlen);	// 返回某个套接字关联的外地协议地址
+// 成功返回0，失败返回-1
 ```
 
+用途：
 
-
-新通用套接字地址结构
-
-```c
-#include <netinet/in.h>
-struct sockaddr_storage {
-    uint8_t 		ss_len;			// length of this struct
-    sa_family_t 	ss_family;		// AF_XXX
-}
-```
-
-如所有套接字函数都是内核的系统调用（System V 中作为库函数）：
-
-从进程到内核传递套接字地址结构的函数：bind、connect、sendto。
-
-从内核到进程传递套接字地址结构的函数：accept、recvfrom、getsockname、getpeername。
-
-传递套接字地址结构的函数：recvmsg、sendmsg。
+1. 在 TCP 客户端上，connect 成功后，getsockname 用于返回内核赋予的套接字信息。
+2. 用端口号 0 调用 bind（告知内核去选择本地端口号），getsockname 用于返回内核赋予的本地端口号。
+3. getsockname 用于获取某个套接字的地址族。
+4. 用通配 IP 地址调用 bind，与某个客户的连接一旦建立（accept 成功返回），getsockname 可用于返回由内核赋予该连接的本地 IP 地址。
+5. 当一个服务器是由调用过 accept 的某个进程通过调用 exec 执行程序时，它能够获得客户身份的唯一途径就是调用 getpeername。
 
 
 
-字节序转换：
-
-```c
-#include <netinet/in.h>
-uint16_t htons(uint16_t host16bitvalue);
-uint32_t htonl(uint32_t host32bitvalue);	// 返回网络序的值
-
-uint16_t ntohs(uint16_t net16bitvalue);
-uint32_t ntohl(uint32_t net32bitvalue);		// 返回主机序的值
-```
 
 
+## Chapter Five
 
-注：在 TCP/IP 发展早期，Byte（8 bits）一般不使用，使用 octet 作为 1 Byte。
