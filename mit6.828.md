@@ -7,6 +7,7 @@ sudo apt-get install m4
 
 ### 2. git clone --recursive https://github.com/riscv/riscv-gnu-toolchain 下载不下来
 
+```
 git clone  https://gitee.com/mirrors/riscv-gnu-toolchain
 cd riscv-gnu-toolchain
 #把之前的空文件夹删了
@@ -20,3 +21,4 @@ git clone git@gitee.com:mirrors/riscv-dejagnu.git
 #riscv-binutils与riscv-gdb为同一个仓库的不同分支
 git clone -b riscv-binutils-2.34 git@gitee.com:mirrors/riscv-binutils-gdb.git  riscv-binutils
 git clone -b fsf-gdb-9.1-with-sim git@gitee.com:mirrors/riscv-binutils-gdb.git riscv-gdb
+```
