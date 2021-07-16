@@ -27,4 +27,7 @@ git clone -b fsf-gdb-9.1-with-sim git@gitee.com:mirrors/riscv-binutils-gdb.git r
 ```
 riscv64-unknown-elf-gdb kernel/kernel
 target remote localhost:26000
+
+上面的 gdb 调试无法使用 layout 系列命令
+gdb-multiarch kernel/kernel
 ```
