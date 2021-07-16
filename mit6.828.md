@@ -22,3 +22,9 @@ git clone git@gitee.com:mirrors/riscv-dejagnu.git
 git clone -b riscv-binutils-2.34 git@gitee.com:mirrors/riscv-binutils-gdb.git  riscv-binutils
 git clone -b fsf-gdb-9.1-with-sim git@gitee.com:mirrors/riscv-binutils-gdb.git riscv-gdb
 ```
+
+### 3. make qemu-gdb 后，进入 gdb 调试报 The program is not being run.
+```
+riscv64-unknown-elf-gdb kernel/kernel
+target remote localhost:26000
+```
