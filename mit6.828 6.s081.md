@@ -31,3 +31,6 @@ target remote localhost:26000
 上面的 gdb 调试无法使用 layout 系列命令
 gdb-multiarch kernel/kernel
 ```
+
+## 参考文献
+https://www.zhihu.com/column/c_1294282919087964160
